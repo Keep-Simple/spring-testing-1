@@ -1,7 +1,9 @@
 package com.example.demo.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;
@@ -17,6 +19,8 @@ import java.time.ZonedDateTime;
 @Data
 @Builder
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 public class ToDoEntity {
 
     @Id
@@ -31,9 +35,6 @@ public class ToDoEntity {
     @Basic
     private ZonedDateTime completedAt;
 
-    public ToDoEntity() {
-    }
-
     public ToDoEntity(String text) {
         this.text = text;
     }
@@ -41,12 +42,6 @@ public class ToDoEntity {
     public ToDoEntity(Long id, String text) {
         this.id = id;
         this.text = text;
-    }
-
-    public ToDoEntity(Long id, String text, ZonedDateTime completedAt) {
-        this.id = id;
-        this.text = text;
-        this.completedAt = completedAt;
     }
 
     @Override

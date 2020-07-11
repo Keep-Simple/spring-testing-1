@@ -9,4 +9,8 @@ public class ToDoNotFoundException extends Exception {
     public ToDoNotFoundException(Long id) {
         super(String.format("Can not find todo with id %d", id));
     }
+
+    public ToDoNotFoundException(String text) {
+        super(String.format("Can not find todo with text %s", text));
+    }
 }

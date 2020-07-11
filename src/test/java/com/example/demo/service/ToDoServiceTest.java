@@ -12,6 +12,7 @@ import org.mockito.ArgumentMatchers;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -27,126 +28,164 @@ class ToDoServiceTest {
 
     private ToDoService toDoService;
 
-    //executes before each test defined below
     @BeforeEach
     void setUp() {
-        this.toDoRepository = mock(ToDoRepository.class);
+        toDoRepository = mock(ToDoRepository.class);
         toDoService = new ToDoService(toDoRepository);
     }
 
+    // GET_ALL METHOD //
+
     @Test
     void whenGetAll_thenReturnAll() {
-        //mock
-        var testToDos = new ArrayList<ToDoEntity>();
-        testToDos.add(new ToDoEntity(0L, "Test 1"));
-        var toDo = new ToDoEntity(1L, "Test 2");
-        toDo.completeNow();
-        testToDos.add(toDo);
-        when(toDoRepository.findAll()).thenReturn(testToDos);
+        var expectedList = Arrays.asList(
+                new ToDoEntity(0L, "Test 1"),
+                new ToDoEntity(1L, "Test 2").completeNow()
+        );
+        when(toDoRepository.findAll()).thenReturn(expectedList);
 
-        //call
-        var todos = toDoService.getAll();
+        var actualList = toDoService.getAll();
 
-        //validate
-        assertEquals(todos.size(), testToDos.size());
-        for (int i = 0; i < todos.size(); i++) {
-            assertThat(todos.get(i), samePropertyValuesAs(
-                    ToDoEntityToResponseMapper.map(testToDos.get(i))
+        assertEquals(actualList.size(), expectedList.size());
+
+        for (int i = 0; i < actualList.size(); i++) {
+            assertThat(actualList.get(i), samePropertyValuesAs(
+                    ToDoEntityToResponseMapper.map(expectedList.get(i))
             ));
         }
     }
 
+    // GET_ALL_COMPLETED METHOD //
+
+    @Test
+    void whenGetAllCompleted_thenReturnAll() {
+        var expectedList = Arrays.asList(
+                new ToDoEntity(1L, "Test 2").completeNow(),
+                new ToDoEntity(1L, "Test 3").completeNow(),
+                new ToDoEntity(1L, "Test 4").completeNow()
+        );
+
+        when(toDoRepository.findByCompletedAtNotNull()).thenReturn(expectedList);
+
+        var actualList = toDoService.getAllCompleted();
+
+        assertEquals(actualList.size(), expectedList.size());
+
+        for (int i = 0; i < actualList.size(); i++) {
+            assertThat(actualList.get(i), samePropertyValuesAs(
+                    ToDoEntityToResponseMapper.map(expectedList.get(i))
+            ));
+        }
+    }
+
+    // UPSERT METHOD //
+
     @Test
     void whenUpsertWithId_thenReturnUpdated() throws ToDoNotFoundException {
-        //mock
         var expectedToDo = new ToDoEntity(0L, "New Item");
-        when(toDoRepository.findById(anyLong())).thenAnswer(i -> {
-            Long id = i.getArgument(0, Long.class);
-            if (id.equals(expectedToDo.getId())) {
-                return Optional.of(expectedToDo);
-            } else {
+
+        when(toDoRepository
+                .findById(anyLong()))
+                .thenReturn(Optional.of(expectedToDo));
+
+        when(toDoRepository
+                .save(ArgumentMatchers.any(ToDoEntity.class)))
+                .thenAnswer(i -> {
+            ToDoEntity s = i.getArgument(0, ToDoEntity.class);
+
+            if (s.getId() == null) {
+                return new ToDoEntity(224L, s.getText());
+            }
+
+            if (!s.getId().equals(expectedToDo.getId())) {
                 return Optional.empty();
             }
-        });
-        when(toDoRepository.save(ArgumentMatchers.any(ToDoEntity.class))).thenAnswer(i -> {
-            ToDoEntity arg = i.getArgument(0, ToDoEntity.class);
-            Long id = arg.getId();
-            if (id != null) {
-                if (!id.equals(expectedToDo.getId()))
-                    return new ToDoEntity(id, arg.getText());
-                expectedToDo.setText(arg.getText());
-                return expectedToDo; //return valid result only if we get valid id
-            } else {
-                return new ToDoEntity(40158L, arg.getText());
-            }
-        });
 
-        //call
-        var toDoSaveRequest = new ToDoSaveRequest();
-        toDoSaveRequest.id = expectedToDo.getId();
-        toDoSaveRequest.text = "Updated Item";
-        var todo = toDoService.upsert(toDoSaveRequest);
+            expectedToDo.setText(s.getText());
+            return expectedToDo;
+            });
 
-        //validate
-        assertSame(todo.id, toDoSaveRequest.id);
-        assertEquals(todo.text, toDoSaveRequest.text);
+        var request = ToDoSaveRequest
+                .builder()
+                .id(expectedToDo.getId())
+                .text("Updated Item")
+                .build();
+
+        var todo = toDoService.upsert(request);
+
+        assertSame(todo.id, request.id);
+        assertEquals(todo.text, request.text);
+    }
+
+    @Test
+    void whenUpsertWithWrongId_thenThrows() {
+        when(toDoRepository
+                .findById(anyLong()))
+                .thenReturn(Optional.empty());
+
+        var toDoDto = ToDoSaveRequest
+                .builder()
+                .text("Non Existent ToDo")
+                .id(99L)
+                .build();
+
+        assertThrows(ToDoNotFoundException.class, ()-> toDoService.upsert(toDoDto));
+
     }
 
     @Test
     void whenUpsertNoId_thenReturnNew() throws ToDoNotFoundException {
-        //mock
         var newId = 0L;
-        when(toDoRepository.findById(anyLong())).thenAnswer(i -> {
-            Long id = i.getArgument(0, Long.class);
-            if (id == newId) {
-                return Optional.empty();
-            } else {
-                return Optional.of(new ToDoEntity(newId, "Wrong ToDo"));
-            }
-        });
-        when(toDoRepository.save(ArgumentMatchers.any(ToDoEntity.class))).thenAnswer(i -> {
-            ToDoEntity arg = i.getArgument(0, ToDoEntity.class);
-            Long id = arg.getId();
-            if (id == null)
-                return new ToDoEntity(newId, arg.getText());
-            else
-                return new ToDoEntity();
-        });
 
-        //call
-        var toDoDto = new ToDoSaveRequest();
-        toDoDto.text = "Created Item";
+        verify(toDoRepository, times(0)).findById(anyLong());
+
+        when(toDoRepository
+                .save(ArgumentMatchers.any(ToDoEntity.class)))
+                .thenAnswer(i -> {
+                    ToDoEntity s = i.getArgument(0, ToDoEntity.class);
+
+                    if (s.getId() != null) {
+                        return new ToDoEntity();
+                    }
+
+                    return new ToDoEntity(newId, s.getText());
+                });
+
+        var toDoDto = ToDoSaveRequest
+                .builder()
+                .text("Created Item")
+                .build();
+
         var result = toDoService.upsert(toDoDto);
 
-        //validate
-        assertEquals((long) result.id, newId);
+        assertEquals(result.id, newId);
         assertEquals(result.text, toDoDto.text);
     }
+
+    // COMPLETE_TO_DO METHOD //
 
     @Test
     void whenComplete_thenReturnWithCompletedAt() throws ToDoNotFoundException {
         var startTime = ZonedDateTime.now(ZoneOffset.UTC);
-        //mock
         var todo = new ToDoEntity(0L, "Test 1");
-        when(toDoRepository.findById(anyLong())).thenReturn(Optional.of(todo));
-        when(toDoRepository.save(ArgumentMatchers.any(ToDoEntity.class))).thenAnswer(i -> {
-            ToDoEntity arg = i.getArgument(0, ToDoEntity.class);
-            Long id = arg.getId();
-            if (id.equals(todo.getId())) {
-                return todo;
-            } else {
-                return new ToDoEntity();
-            }
-        });
 
-        //call
+        when(toDoRepository
+                .findById(anyLong()))
+                .thenReturn(Optional.of(todo));
+
+        when(toDoRepository
+                .save(ArgumentMatchers
+                        .any(ToDoEntity.class)))
+                .thenReturn(todo);
+
         var result = toDoService.completeToDo(todo.getId());
 
-        //validate
         assertSame(result.id, todo.getId());
         assertEquals(result.text, todo.getText());
         assertTrue(result.completedAt.isAfter(startTime));
     }
+
+    // GET_ONE METHOD //
 
     @Test
     void whenGetOne_thenReturnCorrectOne() throws ToDoNotFoundException {
@@ -164,6 +203,35 @@ class ToDoServiceTest {
     }
 
     @Test
+    void whenIdNotFound_thenThrowNotFoundException() {
+        assertThrows(ToDoNotFoundException.class, () -> toDoService.getOne(null));
+    }
+
+    // GET_BY_TEXT METHOD //
+
+    @Test
+    void whenGetByText_thenReturnCorrectOne() throws ToDoNotFoundException {
+        //mock
+        var todo = new ToDoEntity(0L, "Cool topic");
+        when(toDoRepository.findFirstByTextEqualsIgnoreCase(anyString())).thenReturn(Optional.of(todo));
+
+        //call
+        var result = toDoService.getByText("Cool topic");
+
+        //validate
+        assertThat(result, samePropertyValuesAs(
+                ToDoEntityToResponseMapper.map(todo)
+        ));
+    }
+
+    @Test
+    void whenTextNotFound_thenThrowNotFoundException() {
+        assertThrows(ToDoNotFoundException.class, () -> toDoService.getByText(null));
+    }
+
+    // DELETE_ONE METHOD //
+
+    @Test
     void whenDeleteOne_thenRepositoryDeleteCalled() {
         //call
         var id = 0L;
@@ -173,9 +241,6 @@ class ToDoServiceTest {
         verify(toDoRepository, times(1)).deleteById(id);
     }
 
-    @Test
-    void whenIdNotFound_thenThrowNotFoundException() {
-        assertThrows(ToDoNotFoundException.class, () -> toDoService.getOne(1L));
-    }
+
 
 }

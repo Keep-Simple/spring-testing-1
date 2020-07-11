@@ -28,6 +28,14 @@ public class ToDoService {
                 .collect(Collectors.toList());
     }
 
+    public List<ToDoResponse> getAllCompleted() {
+        return toDoRepository
+                .findByCompletedAtNotNull()
+                .stream()
+                .map(ToDoEntityToResponseMapper::map)
+                .collect(Collectors.toList());
+    }
+
     public ToDoResponse upsert(ToDoSaveRequest toDoDTO) throws ToDoNotFoundException {
         ToDoEntity todo;
         //update if it has id or create if it hasn't
@@ -51,6 +59,12 @@ public class ToDoService {
     public ToDoResponse getOne(Long id) throws ToDoNotFoundException {
         return ToDoEntityToResponseMapper.map(
                 toDoRepository.findById(id).orElseThrow(() -> new ToDoNotFoundException(id))
+        );
+    }
+
+    public ToDoResponse getByText(String text) throws ToDoNotFoundException {
+        return ToDoEntityToResponseMapper.map(
+                toDoRepository.findFirstByTextEqualsIgnoreCase(text).orElseThrow(() -> new ToDoNotFoundException(text))
         );
     }
 
