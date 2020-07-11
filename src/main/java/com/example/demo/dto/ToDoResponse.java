@@ -1,15 +1,21 @@
 package com.example.demo.dto;
 
-import java.time.ZonedDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotNull;
+import java.time.ZonedDateTime;
 
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ToDoResponse {
-	@NotNull
-	public Long id;
+    @NotNull
+    public Long id;
 
-	@NotNull
-	public String text;
+    @NotNull
+    public String text;
 
-	public ZonedDateTime completedAt;
+    public ZonedDateTime completedAt;
 }
