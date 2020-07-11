@@ -26,19 +26,29 @@ public class ToDoController {
         return toDoService.getAll();
     }
 
+    @GetMapping("/todos/completed")
+    @Valid List<ToDoResponse> getAllCompleted() {
+        return toDoService.getAllCompleted();
+    }
+
     @PostMapping("/todos")
-    @Valid ToDoResponse save(@Valid @RequestBody ToDoSaveRequest todoSaveRequest) throws ToDoNotFoundException {
+    @Valid ToDoResponse saveOrUpdate(@RequestBody ToDoSaveRequest todoSaveRequest) throws ToDoNotFoundException {
         return toDoService.upsert(todoSaveRequest);
     }
 
     @PutMapping("/todos/{id}/complete")
-    @Valid ToDoResponse save(@PathVariable Long id) throws ToDoNotFoundException {
+    @Valid ToDoResponse complete(@PathVariable Long id) throws ToDoNotFoundException {
         return toDoService.completeToDo(id);
     }
 
     @GetMapping("/todos/{id}")
     @Valid ToDoResponse getOne(@PathVariable Long id) throws ToDoNotFoundException {
         return toDoService.getOne(id);
+    }
+
+    @GetMapping("/todos/name")
+    @Valid ToDoResponse getOneByText(@RequestParam String text) throws ToDoNotFoundException {
+        return toDoService.getByText(text);
     }
 
     @DeleteMapping("/todos/{id}")

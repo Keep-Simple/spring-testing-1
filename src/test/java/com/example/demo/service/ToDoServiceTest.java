@@ -101,8 +101,8 @@ class ToDoServiceTest {
                 return Optional.empty();
             }
 
-            expectedToDo.setText(s.getText());
-            return expectedToDo;
+            s.setText(s.getText());
+            return s;
             });
 
         var request = ToDoSaveRequest
@@ -119,9 +119,6 @@ class ToDoServiceTest {
 
     @Test
     void whenUpsertWithWrongId_thenThrows() {
-        when(toDoRepository
-                .findById(anyLong()))
-                .thenReturn(Optional.empty());
 
         var toDoDto = ToDoSaveRequest
                 .builder()
@@ -130,7 +127,6 @@ class ToDoServiceTest {
                 .build();
 
         assertThrows(ToDoNotFoundException.class, ()-> toDoService.upsert(toDoDto));
-
     }
 
     @Test
@@ -189,14 +185,11 @@ class ToDoServiceTest {
 
     @Test
     void whenGetOne_thenReturnCorrectOne() throws ToDoNotFoundException {
-        //mock
         var todo = new ToDoEntity(0L, "Test 1");
         when(toDoRepository.findById(anyLong())).thenReturn(Optional.of(todo));
 
-        //call
         var result = toDoService.getOne(0L);
 
-        //validate
         assertThat(result, samePropertyValuesAs(
                 ToDoEntityToResponseMapper.map(todo)
         ));
@@ -211,14 +204,11 @@ class ToDoServiceTest {
 
     @Test
     void whenGetByText_thenReturnCorrectOne() throws ToDoNotFoundException {
-        //mock
         var todo = new ToDoEntity(0L, "Cool topic");
         when(toDoRepository.findFirstByTextEqualsIgnoreCase(anyString())).thenReturn(Optional.of(todo));
 
-        //call
         var result = toDoService.getByText("Cool topic");
 
-        //validate
         assertThat(result, samePropertyValuesAs(
                 ToDoEntityToResponseMapper.map(todo)
         ));
