@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles(profiles = "test")
 @AutoConfigureMockMvc
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class ToDoControllerITWithRepository {
+class ToDoControllerITWithServiceAndRepository {
 
     @Autowired
     private ObjectMapper toJson;

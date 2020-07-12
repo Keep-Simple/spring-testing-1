@@ -11,7 +11,6 @@ import org.mockito.ArgumentMatchers;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -20,7 +19,6 @@ import static org.hamcrest.Matchers.samePropertyValuesAs;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-//import static org.mockito.AdditionalAnswers.*;
 
 class ToDoServiceTest {
 
@@ -42,15 +40,18 @@ class ToDoServiceTest {
                 new ToDoEntity(0L, "Test 1"),
                 new ToDoEntity(1L, "Test 2").completeNow()
         );
-        when(toDoRepository.findAll()).thenReturn(expectedList);
+
+        when(toDoRepository
+                .findAll())
+                .thenReturn(expectedList);
 
         var actualList = toDoService.getAll();
 
         assertEquals(actualList.size(), expectedList.size());
 
         for (int i = 0; i < actualList.size(); i++) {
-            assertThat(actualList.get(i), samePropertyValuesAs(
-                    ToDoEntityToResponseMapper.map(expectedList.get(i))
+            assertThat(actualList.get(i),
+                    samePropertyValuesAs(ToDoEntityToResponseMapper.map(expectedList.get(i))
             ));
         }
     }
@@ -65,15 +66,17 @@ class ToDoServiceTest {
                 new ToDoEntity(1L, "Test 4").completeNow()
         );
 
-        when(toDoRepository.findByCompletedAtNotNull()).thenReturn(expectedList);
+        when(toDoRepository
+                .findByCompletedAtNotNull())
+                .thenReturn(expectedList);
 
         var actualList = toDoService.getAllCompleted();
 
         assertEquals(actualList.size(), expectedList.size());
 
         for (int i = 0; i < actualList.size(); i++) {
-            assertThat(actualList.get(i), samePropertyValuesAs(
-                    ToDoEntityToResponseMapper.map(expectedList.get(i))
+            assertThat(actualList.get(i),
+                    samePropertyValuesAs(ToDoEntityToResponseMapper.map(expectedList.get(i))
             ));
         }
     }
@@ -126,14 +129,13 @@ class ToDoServiceTest {
                 .id(99L)
                 .build();
 
+        //repository mock will behave as needed here - return Optional.empty()
         assertThrows(ToDoNotFoundException.class, ()-> toDoService.upsert(toDoDto));
     }
 
     @Test
     void whenUpsertNoId_thenReturnNew() throws ToDoNotFoundException {
         var newId = 0L;
-
-        verify(toDoRepository, times(0)).findById(anyLong());
 
         when(toDoRepository
                 .save(ArgumentMatchers.any(ToDoEntity.class)))
@@ -154,6 +156,7 @@ class ToDoServiceTest {
 
         var result = toDoService.upsert(toDoDto);
 
+        verify(toDoRepository, times(0)).findById(anyLong());
         assertEquals(result.id, newId);
         assertEquals(result.text, toDoDto.text);
     }
@@ -186,7 +189,10 @@ class ToDoServiceTest {
     @Test
     void whenGetOne_thenReturnCorrectOne() throws ToDoNotFoundException {
         var todo = new ToDoEntity(0L, "Test 1");
-        when(toDoRepository.findById(anyLong())).thenReturn(Optional.of(todo));
+
+        when(toDoRepository
+                .findById(anyLong()))
+                .thenReturn(Optional.of(todo));
 
         var result = toDoService.getOne(0L);
 
@@ -205,12 +211,15 @@ class ToDoServiceTest {
     @Test
     void whenGetByText_thenReturnCorrectOne() throws ToDoNotFoundException {
         var todo = new ToDoEntity(0L, "Cool topic");
-        when(toDoRepository.findFirstByTextEqualsIgnoreCase(anyString())).thenReturn(Optional.of(todo));
+
+        when(toDoRepository
+                .findFirstByTextEqualsIgnoreCase(anyString()))
+                .thenReturn(Optional.of(todo));
 
         var result = toDoService.getByText("Cool topic");
 
-        assertThat(result, samePropertyValuesAs(
-                ToDoEntityToResponseMapper.map(todo)
+        assertThat(result,
+                samePropertyValuesAs(ToDoEntityToResponseMapper.map(todo)
         ));
     }
 
@@ -223,14 +232,10 @@ class ToDoServiceTest {
 
     @Test
     void whenDeleteOne_thenRepositoryDeleteCalled() {
-        //call
         var id = 0L;
         toDoService.deleteOne(id);
 
-        //validate
         verify(toDoRepository, times(1)).deleteById(id);
     }
-
-
 
 }
