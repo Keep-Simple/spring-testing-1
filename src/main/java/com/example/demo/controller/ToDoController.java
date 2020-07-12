@@ -5,6 +5,8 @@ import com.example.demo.dto.ToDoSaveRequest;
 import com.example.demo.exception.ToDoNotFoundException;
 import com.example.demo.service.ToDoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -17,8 +19,8 @@ public class ToDoController {
     ToDoService toDoService;
 
     @ExceptionHandler({ToDoNotFoundException.class})
-    public String handleException(Exception ex) {
-        return ex.getMessage();
+    public ResponseEntity<String> handleException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     @GetMapping("/todos")

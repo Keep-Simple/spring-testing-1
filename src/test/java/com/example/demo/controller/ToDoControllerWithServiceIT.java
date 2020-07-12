@@ -8,8 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.json.BasicJsonParser;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -25,14 +23,15 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ToDoController.class)
-//@AutoConfigureMockMvc
 @ActiveProfiles(profiles = "test")
 @Import(ToDoService.class)
 class ToDoControllerWithServiceIT {
+
+    @Autowired
+    private ObjectMapper toJson;
 
     @Autowired
     private MockMvc mockMvc;
@@ -109,7 +108,7 @@ class ToDoControllerWithServiceIT {
     }
 
     @Test
-    void whenUpdated_thenReturnValidResponse() throws Exception {
+    void whenUpdatedOrSaved_thenReturnValidResponse() throws Exception {
         String previousText = "mike";
 
         var req = ToDoSaveRequest
@@ -139,10 +138,11 @@ class ToDoControllerWithServiceIT {
                     return s;
                 });
 
+        //should return updated
         this.mockMvc
                 .perform(MockMvcRequestBuilders
                         .post("/todos")
-                        .content(asJsonString(req))
+                        .content(toJson.writeValueAsString(req))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -151,11 +151,13 @@ class ToDoControllerWithServiceIT {
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.id").value(req.id));
 
+        // should return new ToDoEntity
         req.id = null;
+
         this.mockMvc
                 .perform(MockMvcRequestBuilders
                         .post("/todos")
-                        .content(asJsonString(req))
+                        .content(toJson.writeValueAsString(req))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -163,15 +165,6 @@ class ToDoControllerWithServiceIT {
                 .andExpect(jsonPath("$.text").value(req.text))
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.id").value(224L));
-    }
-
-    public static String asJsonString(final Object obj) {
-        try {
-            final ObjectMapper mapper = new ObjectMapper();
-            return mapper.writeValueAsString(obj);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }

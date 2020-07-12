@@ -20,9 +20,10 @@ public class DemoApplication {
     CommandLineRunner initDatabase(ToDoRepository repository) {
         return args -> {
             repository.save(new ToDoEntity("Wash the dishes"));
-            repository.save(
-                    new ToDoEntity("Learn to test Java app").completeNow()
-            );
+            repository.save(new ToDoEntity("Learn to test")).completeNow();
+            repository.save(new ToDoEntity("Cleaning"));
+            repository.save(new ToDoEntity("JS")).completeNow();
+            repository.save(new ToDoEntity("Sports"));
         };
     }
 }

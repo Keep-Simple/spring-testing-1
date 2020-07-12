@@ -46,6 +46,12 @@ public class ToDoEntity {
 
     @Override
     public String toString() {
+        if (completedAt == null) {
+            return String.format(
+                    "ToDoEntity[id=%d, text='%s', completedAt='Not yet']",
+                    id, text
+            );
+        }
         return String.format(
                 "ToDoEntity[id=%d, text='%s', completedAt='%s']",
                 id, text, completedAt.toString()
